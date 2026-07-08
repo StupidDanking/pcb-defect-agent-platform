@@ -247,3 +247,12 @@ models/*.onnx
 datasets/*
 !datasets/.gitkeep
 !models/.gitkeep
+# Logs
+logs/
+*.log
+!backend/logs/.gitkeep
+
+# Pytest local database
+backend/test.db
+backend/.pytest_cache/
+.pytest_cache/

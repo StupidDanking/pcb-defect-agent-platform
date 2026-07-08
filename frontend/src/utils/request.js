@@ -1,5 +1,6 @@
 ﻿import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { reportError } from '@/utils/errorReporter'
 
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
@@ -7,7 +8,6 @@ const request = axios.create({
 })
 
 // 请求拦截器
-// 每次请求前，自动从 localStorage 中取出 token，并添加到请求头
 request.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token')
@@ -19,12 +19,12 @@ request.interceptors.request.use(
     return config
   },
   (error) => {
+    reportError('axios_request_error', error)
     return Promise.reject(error)
   },
 )
 
 // 响应拦截器
-// 统一处理后端返回结果和错误信息
 request.interceptors.response.use(
   (response) => {
     return response.data
@@ -36,6 +36,13 @@ request.interceptors.response.use(
       error.response?.data?.message ||
       error.message ||
       '请求失败'
+
+    reportError('axios_response_error', error, {
+      status,
+      url: error.config?.url,
+      method: error.config?.method,
+      response: error.response?.data,
+    })
 
     if (status === 401) {
       localStorage.removeItem('access_token')

@@ -10,11 +10,12 @@ FastAPI 应用入口
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
 
 from app.api.auth import router as auth_router
+from app.api.health import router as health_router
 from app.config.settings import settings
-from app.database.session import engine
+from app.core.exceptions import register_exception_handlers
+from app.core.middleware import RequestLoggingMiddleware
 
 
 app = FastAPI(
@@ -24,6 +25,12 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# 注册全局异常处理器
+register_exception_handlers(app)
+
+# 注册 API 请求日志中间件
+app.add_middleware(RequestLoggingMiddleware)
 
 
 # CORS 跨域配置
@@ -43,6 +50,7 @@ app.add_middleware(
 # POST /api/auth/login
 # GET  /api/auth/me
 app.include_router(auth_router, prefix="/api/auth")
+app.include_router(health_router)
 
 
 @app.get("/", summary="根路径")
@@ -54,34 +62,6 @@ def root():
         "docs": "/docs",
     }
 
-
-@app.get("/api/health", summary="健康检查")
-def health_check():
-    """
-    健康检查接口。
-
-    当前先检查后端服务和数据库连接。
-    Redis、MinIO 的深入检查后面 Day4 可继续完善。
-    """
-    database_status = "unknown"
-
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        database_status = "ok"
-    except Exception as e:
-        database_status = f"error: {str(e)}"
-
-    return {
-        "code": 200,
-        "message": "ok",
-        "data": {
-            "status": "healthy" if database_status == "ok" else "degraded",
-            "app_name": settings.APP_NAME,
-            "version": settings.APP_VERSION,
-            "database": database_status,
-        },
-    }
 
 
 if __name__ == "__main__":

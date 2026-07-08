@@ -12,6 +12,8 @@ import router from '@/router'
 
 import '@/assets/styles/global.scss'
 
+import { setupErrorReporting } from '@/utils/errorReporter'
+
 const app = createApp(App)
 
 // 注册 Pinia 状态管理
@@ -29,5 +31,8 @@ app.use(ElementPlus, {
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
+
+// 注册前端错误监控
+setupErrorReporting(app)
 
 app.mount('#app')

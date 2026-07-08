@@ -27,3 +27,5 @@ openai
 
 pytest
 
+pytest
+pytest-asyncio

@@ -14,7 +14,7 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `@import "@/assets/styles/variables.scss";\n`,
+        additionalData: `@use "@/assets/styles/variables.scss" as *;\n`,
       },
     },
   },
@@ -28,5 +28,11 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    include: ['tests/**/*.test.js'],
   },
 })
