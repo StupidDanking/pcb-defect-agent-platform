@@ -1,6 +1,16 @@
 ﻿from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _auto_device() -> str:
+    """GPU 可用时用 0，否则回退到 cpu。"""
+    try:
+        import torch
+
+        return "0" if torch.cuda.is_available() else "cpu"
+    except Exception:
+        return "cpu"
+
+
 class Settings(BaseSettings):
     # 应用基础配置
     APP_NAME: str = "PCB AOI Agent Platform"
@@ -46,7 +56,8 @@ class Settings(BaseSettings):
     TRAIN_OUTPUT_DIR: str = "runs/train"
     DATASET_BASE_DIR: str = "../datasets/pcb_defect"
     DEFAULT_YOLO_MODEL: str = "yolo11n.pt"
-    DEFAULT_TRAIN_DEVICE: str = "0"
+    DEFAULT_TRAIN_DEVICE: str = _auto_device()
+    DEFAULT_DETECT_DEVICE: str = _auto_device()
 
     # Qwen 大模型配置
     # 推荐先使用通用 OpenAI-compatible 地址

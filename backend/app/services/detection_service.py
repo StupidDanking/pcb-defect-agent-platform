@@ -90,6 +90,25 @@ class DetectionService:
 
         return self._model_cache[model_path]
 
+    def _resolve_device(self, device: str | None = None) -> str:
+        """请求 GPU 但本机无 CUDA 时自动回退到 CPU。"""
+        requested = device if device is not None else settings.DEFAULT_DETECT_DEVICE
+        requested = str(requested).strip() or settings.DEFAULT_DETECT_DEVICE
+
+        wants_cuda = requested in {"0", "cuda", "cuda:0"} or requested.startswith("cuda:")
+        if not wants_cuda:
+            return requested
+
+        try:
+            import torch
+
+            if torch.cuda.is_available():
+                return requested
+        except Exception:
+            pass
+
+        return "cpu"
+
     def _image_to_base64(self, image_path: Path) -> str:
         with open(image_path, "rb") as file:
             encoded = base64.b64encode(file.read()).decode("utf-8")
@@ -133,9 +152,10 @@ class DetectionService:
         image_path: str | Path,
         conf: float = 0.25,
         iou: float = 0.45,
-        device: str = "0",
+        device: str | None = None,
     ) -> dict[str, Any]:
         image_path = Path(image_path)
+        device = self._resolve_device(device)
 
         if not image_path.exists():
             raise FileNotFoundError(f"图片不存在：{image_path}")
@@ -198,8 +218,9 @@ class DetectionService:
         image_paths: list[str | Path],
         conf: float = 0.25,
         iou: float = 0.45,
-        device: str = "0",
+        device: str | None = None,
     ) -> dict[str, Any]:
+        device = self._resolve_device(device)
         results = []
 
         for image_path in image_paths:
@@ -249,9 +270,10 @@ class DetectionService:
         zip_path: str | Path,
         conf: float = 0.25,
         iou: float = 0.45,
-        device: str = "0",
+        device: str | None = None,
     ) -> dict[str, Any]:
         zip_path = Path(zip_path)
+        device = self._resolve_device(device)
 
         if not zip_path.exists():
             raise FileNotFoundError(f"ZIP 文件不存在：{zip_path}")
@@ -293,9 +315,10 @@ class DetectionService:
         iou: float = 0.45,
         frame_sample_rate: int = 5,
         max_frames: int = 50,
-        device: str = "0",
+        device: str | None = None,
     ) -> dict[str, Any]:
         video_path = Path(video_path)
+        device = self._resolve_device(device)
 
         if not video_path.exists():
             raise FileNotFoundError(f"视频文件不存在：{video_path}")

@@ -326,7 +326,7 @@ async function handleDetect() {
     formData.append('file', selectedFile.value)
     formData.append('conf', String(conf.value))
     formData.append('iou', String(iou.value))
-    formData.append('device', '0')
+    formData.append('device', 'cpu')
 
     const res = await detectSingleImage(formData)
     const payload = res?.data || res || {}

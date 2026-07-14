@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse
 
 from app.agent.detection_agent import detection_agent
 from app.api.auth import get_current_user
+from app.config.settings import settings
 
 
 router = APIRouter(prefix="/api/chat", tags=["智能对话"])
@@ -50,7 +51,7 @@ async def chat_stream(
     files: Optional[List[UploadFile]] = File(None),
     conf: float = Form(0.25),
     iou: float = Form(0.45),
-    device: str = Form("0"),
+    device: str = Form(default=settings.DEFAULT_DETECT_DEVICE),
     current_user=Depends(get_current_user),
 ):
     """

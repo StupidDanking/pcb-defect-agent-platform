@@ -486,7 +486,7 @@ async function handleSend() {
       files: filesForRequest,
       conf: conf.value,
       iou: iou.value,
-      device: '0',
+      device: 'cpu',
       async onEvent(event) {
         if (event.type === 'thinking') {
           assistantMessage.statusText = event.content || '正在思考...'

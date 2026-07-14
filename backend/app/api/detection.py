@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.api.auth import get_current_user
+from app.config.settings import settings
 from app.database.session import SessionLocal
 from app.services.detection_service import detection_service
 
@@ -46,7 +47,7 @@ def detect_single_image(
     file: UploadFile = File(...),
     conf: float = Form(0.25),
     iou: float = Form(0.45),
-    device: str = Form("0"),
+    device: str = Form(default=settings.DEFAULT_DETECT_DEVICE),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -74,7 +75,7 @@ def detect_batch_images(
     files: List[UploadFile] = File(...),
     conf: float = Form(0.25),
     iou: float = Form(0.45),
-    device: str = Form("0"),
+    device: str = Form(default=settings.DEFAULT_DETECT_DEVICE),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -105,7 +106,7 @@ def detect_zip_images(
     file: UploadFile = File(...),
     conf: float = Form(0.25),
     iou: float = Form(0.45),
-    device: str = Form("0"),
+    device: str = Form(default=settings.DEFAULT_DETECT_DEVICE),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -135,7 +136,7 @@ def detect_video_file(
     iou: float = Form(0.45),
     frame_sample_rate: int = Form(5),
     max_frames: int = Form(50),
-    device: str = Form("0"),
+    device: str = Form(default=settings.DEFAULT_DETECT_DEVICE),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
