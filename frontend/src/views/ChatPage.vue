@@ -7,24 +7,6 @@
         <p>
           可以上传单张图片、多张图片、ZIP 或视频文件进行检测，也可以直接询问 PCB 缺陷和模型指标。
         </p>
-
-        <div class="quick-prompts">
-          <button @click="usePrompt('PCB 缺孔缺陷一般是什么原因造成的？')">
-            缺孔原因分析
-          </button>
-
-          <button @click="usePrompt('如何判断 PCB 短路缺陷的严重程度？')">
-            短路严重程度
-          </button>
-
-          <button @click="usePrompt('YOLOv11 的 mAP50 和 Recall 分别代表什么？')">
-            模型指标解释
-          </button>
-
-          <button @click="usePrompt('请检测这个 PCB 视频')">
-            视频检测
-          </button>
-        </div>
       </div>
 
       <div v-else class="message-list">
@@ -197,10 +179,6 @@ const videoSuffixes = [
 
 function makeId() {
   return `${Date.now()}-${Math.random()}`
-}
-
-function usePrompt(text) {
-  inputText.value = text
 }
 
 function resetChat() {
@@ -645,7 +623,7 @@ onMounted(() => {
 
 <style scoped>
 .chat-page {
-  height: calc(100vh - 118px);
+  height: calc(100vh - 78px);
   display: flex;
   flex-direction: column;
   background: #ffffff;
@@ -661,7 +639,7 @@ onMounted(() => {
 .empty-state {
   max-width: 760px;
   text-align: center;
-  margin-top: 110px;
+  margin-top: 140px;
 }
 
 .empty-icon {
@@ -686,26 +664,6 @@ onMounted(() => {
   margin: 12px 0 24px;
   color: #6b7280;
   line-height: 1.8;
-}
-
-.quick-prompts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.quick-prompts button {
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #374151;
-  border-radius: 14px;
-  padding: 13px 16px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.quick-prompts button:hover {
-  background: #f9fafb;
 }
 
 .message-list {
@@ -941,10 +899,6 @@ onMounted(() => {
 }
 
 @media (max-width: 900px) {
-  .quick-prompts {
-    grid-template-columns: 1fr;
-  }
-
   .composer {
     flex-wrap: wrap;
   }

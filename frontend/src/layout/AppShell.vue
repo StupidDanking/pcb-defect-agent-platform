@@ -113,18 +113,6 @@
     </aside>
 
     <main class="main-area">
-      <header class="topbar">
-        <div>
-          <h1>{{ pageTitle }}</h1>
-          <p>{{ pageSubtitle }}</p>
-        </div>
-
-        <div class="topbar-right">
-          <span class="model-pill">YOLOv11</span>
-          <span class="role-pill">{{ roleText }}</span>
-        </div>
-      </header>
-
       <section class="content-area">
         <router-view />
       </section>
@@ -180,25 +168,6 @@ const allNavItems = [
   },
 ]
 
-const pageMetaMap = {
-  '/chat': {
-    title: '智能问答',
-    subtitle: '通过对话方式分析 PCB 缺陷、模型指标和质量评估结果。',
-  },
-  '/detection': {
-    title: '图片检测',
-    subtitle: '上传 PCB 图片，选择模型版本并进行缺陷检测。',
-  },
-  '/training': {
-    title: '模型训练与评估',
-    subtitle: '训练 YOLOv11 模型，查看 loss、mAP、评估报告和模型导出。',
-  },
-  '/models': {
-    title: '模型版本管理',
-    subtitle: '管理已发布模型版本、指标、下载路径和默认检测模型。',
-  },
-}
-
 const userRole = computed(() => {
   return localStorage.getItem('user_role') || localStorage.getItem('role') || 'user'
 })
@@ -228,16 +197,6 @@ const developerNavItems = computed(() => {
 const filteredRecents = computed(() => {
   return recents.value
 })
-
-const currentMeta = computed(() => {
-  return pageMetaMap[route.path] || {
-    title: 'PCB AOI Agent Platform',
-    subtitle: '智能 PCB 缺陷检测与质量评估工作台。',
-  }
-})
-
-const pageTitle = computed(() => currentMeta.value.title)
-const pageSubtitle = computed(() => currentMeta.value.subtitle)
 
 const username = computed(() => {
   const directUsername =
@@ -722,48 +681,6 @@ onBeforeUnmount(() => {
   background: #ffffff;
 }
 
-.topbar {
-  height: 70px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
-  padding: 0 28px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.topbar h1 {
-  margin: 0;
-  color: #111827;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.topbar p {
-  margin: 5px 0 0;
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.model-pill,
-.role-pill {
-  height: 32px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #374151;
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  font-size: 13px;
-}
-
 .content-area {
   flex: 1;
   overflow: auto;
@@ -775,14 +692,6 @@ onBeforeUnmount(() => {
   .sidebar {
     width: 240px;
     min-width: 240px;
-  }
-
-  .topbar {
-    padding: 0 18px;
-  }
-
-  .topbar-right {
-    display: none;
   }
 
   .content-area {

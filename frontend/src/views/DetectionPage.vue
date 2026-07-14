@@ -97,12 +97,7 @@
             </p>
           </div>
 
-          <button
-            v-if="historyId"
-            class="history-pill"
-          >
-            历史任务 ID：{{ historyId }}
-          </button>
+          
         </div>
 
         <div v-if="loadingHistory" class="empty-result">
@@ -317,11 +312,6 @@ async function handleDetect() {
   detecting.value = true
 
   try {
-    /*
-      这里不需要把 modelVersion 放到检测接口里。
-      因为 handleModelVersionChange 已经调用 /api/models/active，
-      后端 DetectionService 会自动读取 active_model.json。
-    */
     const formData = new FormData()
     formData.append('file', selectedFile.value)
     formData.append('conf', String(conf.value))
@@ -421,6 +411,7 @@ onMounted(() => {
 <style scoped>
 .detection-page {
   width: 100%;
+  padding-top: 0;
 }
 
 .page-grid {
@@ -595,15 +586,7 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.history-pill {
-  border: none;
-  border-radius: 999px;
-  background: #f3f4f6;
-  color: #374151;
-  height: 32px;
-  padding: 0 12px;
-  font-size: 13px;
-}
+
 
 .empty-result {
   border: 1px solid #e5e7eb;

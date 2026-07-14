@@ -2,294 +2,356 @@
   <div class="models-page">
     <div class="page-header">
       <div>
-        <h2>模型版本管理</h2>
+        <h1>模型版本管理</h1>
         <p>管理 PCB AOI 检测模型版本、训练指标和评估图表。</p>
       </div>
 
-      <button class="refresh-btn" @click="loadModels">
-        刷新
+      <button class="refresh-btn" :disabled="loading" @click="loadModels">
+        {{ loading ? '刷新中...' : '刷新' }}
       </button>
     </div>
 
-    <div v-if="loading" class="empty-card">
+    <div v-if="loading" class="empty-box">
       正在加载模型版本...
     </div>
 
-    <div v-else-if="models.length === 0" class="empty-card">
-      暂无模型版本。请检查 backend/models 目录。
+    <div v-else-if="models.length === 0" class="empty-box">
+      暂未发现模型版本，请检查 backend/models 目录。
     </div>
 
-    <div v-else class="model-grid">
-      <div
-        v-for="model in models"
-        :key="model.name"
-        class="model-card"
-        :class="{ active: selectedModel && selectedModel.name === model.name }"
-        @click="selectModel(model)"
-      >
-        <div class="model-title-row">
-          <div>
-            <h3>{{ model.display_name }}</h3>
-            <p>{{ model.name }}</p>
-          </div>
-
-          <span v-if="model.is_default" class="default-pill">
-            当前使用中
-          </span>
-        </div>
-
-        <div class="metric-mini-grid">
-          <div>
-            <span>Precision</span>
-            <strong>{{ formatMetric(model.precision) }}</strong>
-          </div>
-
-          <div>
-            <span>Recall</span>
-            <strong>{{ formatMetric(model.recall) }}</strong>
-          </div>
-
-          <div>
-            <span>mAP50</span>
-            <strong>{{ formatMetric(model.map50) }}</strong>
-          </div>
-
-          <div>
-            <span>mAP50-95</span>
-            <strong>{{ formatMetric(model.map50_95) }}</strong>
-          </div>
-        </div>
-
-        <div class="model-meta">
-          <span>{{ model.model_type }}</span>
-          <span>{{ model.epochs }} epochs</span>
-          <span>{{ model.best_size_mb }} MB</span>
-        </div>
-      </div>
-    </div>
-
-    <section v-if="selectedModel" class="detail-section">
-      <div class="section-header">
-        <div>
-          <h3>{{ selectedModel.display_name }}</h3>
-          <p>{{ selectedModel.description || '暂无描述' }}</p>
-        </div>
-
-        <button
-          class="set-default-btn"
-          :disabled="selectedModel.is_default || settingActive"
-          @click="handleSetActiveModel"
+    <template v-else>
+      <div class="model-card-list">
+        <div
+          v-for="model in models"
+          :key="model.name"
+          class="model-card"
+          :class="{ selected: selectedModel?.name === model.name }"
+          @click="selectModel(model)"
         >
-          {{ selectedModel.is_default ? '当前检测模型' : settingActive ? '设置中...' : '设为当前检测模型' }}
-        </button>
-      </div>
+          <div class="model-card-header">
+            <div class="model-title-area">
+              <h2>{{ model.name }}</h2>
+              <p>{{ model.display_name || model.version || model.name }}</p>
+            </div>
 
-      <div class="active-tip">
-        当前检测接口会自动使用标记为“当前使用中”的模型版本。
-      </div>
+            <span v-if="isActiveModel(model)" class="active-badge">
+              当前使用中
+            </span>
+          </div>
 
-      <div class="detail-grid">
-        <div class="detail-card">
-          <h4>最终指标</h4>
+          <div class="mini-metrics">
+            <div class="mini-metric">
+              <span>Precision</span>
+              <strong>{{ formatPercent(model.precision) }}</strong>
+            </div>
+            <div class="mini-metric">
+              <span>Recall</span>
+              <strong>{{ formatPercent(model.recall) }}</strong>
+            </div>
+            <div class="mini-metric">
+              <span>mAP50</span>
+              <strong>{{ formatPercent(model.map50) }}</strong>
+            </div>
+            <div class="mini-metric">
+              <span>mAP50-95</span>
+              <strong>{{ formatPercent(model.map50_95) }}</strong>
+            </div>
+          </div>
 
-          <table>
-            <tbody>
-              <tr>
-                <td>Precision</td>
-                <td>{{ formatMetric(selectedModel.precision) }}</td>
-              </tr>
-              <tr>
-                <td>Recall</td>
-                <td>{{ formatMetric(selectedModel.recall) }}</td>
-              </tr>
-              <tr>
-                <td>mAP50</td>
-                <td>{{ formatMetric(selectedModel.map50) }}</td>
-              </tr>
-              <tr>
-                <td>mAP50-95</td>
-                <td>{{ formatMetric(selectedModel.map50_95) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="detail-card">
-          <h4>Loss</h4>
-
-          <table>
-            <tbody>
-              <tr>
-                <td>train box loss</td>
-                <td>{{ formatNumber(selectedModel.train_box_loss) }}</td>
-              </tr>
-              <tr>
-                <td>train cls loss</td>
-                <td>{{ formatNumber(selectedModel.train_cls_loss) }}</td>
-              </tr>
-              <tr>
-                <td>train dfl loss</td>
-                <td>{{ formatNumber(selectedModel.train_dfl_loss) }}</td>
-              </tr>
-              <tr>
-                <td>val box loss</td>
-                <td>{{ formatNumber(selectedModel.val_box_loss) }}</td>
-              </tr>
-              <tr>
-                <td>val cls loss</td>
-                <td>{{ formatNumber(selectedModel.val_cls_loss) }}</td>
-              </tr>
-              <tr>
-                <td>val dfl loss</td>
-                <td>{{ formatNumber(selectedModel.val_dfl_loss) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="artifact-section">
-        <h4>训练与评估图表</h4>
-
-        <div class="artifact-grid">
-          <div
-            v-for="item in artifactImages"
-            :key="item.filename"
-            class="artifact-card"
-          >
-            <h5>{{ item.title }}</h5>
-            <img
-              :src="getModelArtifactUrl(selectedModel.name, item.filename)"
-              :alt="item.title"
-            />
+          <div class="model-tags">
+            <span>{{ model.model_type || 'YOLOv11' }}</span>
+            <span>{{ model.epochs || '-' }} epochs</span>
+            <span v-if="model.best_size_mb">{{ model.best_size_mb }} MB</span>
           </div>
         </div>
       </div>
-    </section>
+
+      <div v-if="selectedModel" class="detail-section">
+        <div class="detail-header">
+          <div>
+            <h2>{{ selectedModel.name }}</h2>
+            <p>{{ selectedModel.description || '暂无描述' }}</p>
+          </div>
+
+          <button
+            class="set-active-btn"
+            :disabled="switching || isActiveModel(selectedModel)"
+            @click="handleSetActive"
+          >
+            {{ isActiveModel(selectedModel) ? '当前检测模型' : '设为当前检测模型' }}
+          </button>
+        </div>
+
+        <div class="info-tip">
+          当前检测接口会自动使用标记为“当前使用中”的模型版本。
+        </div>
+
+        <div class="metrics-row">
+          <div class="metric-panel metric-panel-score">
+            <h3>最终评估指标</h3>
+
+            <div class="compact-table">
+              <div class="compact-row">
+                <span>Precision</span>
+                <strong>{{ formatPercent(selectedModel.precision) }}</strong>
+              </div>
+              <div class="compact-row">
+                <span>Recall</span>
+                <strong>{{ formatPercent(selectedModel.recall) }}</strong>
+              </div>
+              <div class="compact-row">
+                <span>mAP50</span>
+                <strong>{{ formatPercent(selectedModel.map50) }}</strong>
+              </div>
+              <div class="compact-row">
+                <span>mAP50-95</span>
+                <strong>{{ formatPercent(selectedModel.map50_95) }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="metric-panel metric-panel-loss">
+            <h3>Loss</h3>
+
+            <div class="compact-table">
+              <div
+                v-for="row in lossRows"
+                :key="row.label"
+                class="compact-row"
+              >
+                <span>{{ row.label }}</span>
+                <strong>{{ row.value }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-section">
+          <h3>训练与评估图表</h3>
+
+          <div class="artifact-grid">
+            <div
+              v-for="chart in charts"
+              :key="chart.filename"
+              class="artifact-card"
+              :class="{ wide: chart.wide }"
+            >
+              <div class="artifact-title">
+                {{ chart.title }}
+              </div>
+
+              <div class="artifact-image-wrap">
+                <img
+                  :src="artifactUrl(chart.filename)"
+                  :alt="chart.title"
+                  class="artifact-img"
+                  @click="openPreview(chart)"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <div
+      v-if="previewVisible"
+      class="preview-mask"
+      @click="previewVisible = false"
+    >
+      <div class="preview-panel" @click.stop>
+        <div class="preview-header">
+          <strong>{{ previewTitle }}</strong>
+          <button @click="previewVisible = false">关闭</button>
+        </div>
+
+        <img :src="previewImage" class="preview-img" />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   getModelVersions,
-  getModelArtifactUrl,
+  getActiveModel,
   setActiveModel,
+  getModelArtifactUrl
 } from '@/api/models'
 
 const loading = ref(false)
-const settingActive = ref(false)
+const switching = ref(false)
 const models = ref([])
 const selectedModel = ref(null)
+const activeModelName = ref('')
+const artifactCacheKey = ref(Date.now())
 
-const artifactImages = [
+const previewVisible = ref(false)
+const previewTitle = ref('')
+const previewImage = ref('')
+
+const charts = [
   {
     title: '训练曲线总览',
     filename: 'results.png',
+    wide: true
   },
   {
     title: '混淆矩阵',
     filename: 'confusion_matrix.png',
+    wide: false
   },
   {
     title: '归一化混淆矩阵',
     filename: 'confusion_matrix_normalized.png',
+    wide: false
   },
   {
     title: 'PR 曲线',
     filename: 'BoxPR_curve.png',
+    wide: false
   },
   {
     title: 'F1 曲线',
     filename: 'BoxF1_curve.png',
+    wide: false
   },
   {
     title: 'Precision 曲线',
     filename: 'BoxP_curve.png',
+    wide: false
   },
   {
     title: 'Recall 曲线',
     filename: 'BoxR_curve.png',
-  },
+    wide: false
+  }
 ]
 
-async function loadModels() {
+const lossRows = computed(() => {
+  if (!selectedModel.value) return []
+
+  const model = selectedModel.value
+
+  return [
+    ['train box loss', model.train_box_loss],
+    ['train cls loss', model.train_cls_loss],
+    ['train dfl loss', model.train_dfl_loss],
+    ['val box loss', model.val_box_loss],
+    ['val cls loss', model.val_cls_loss],
+    ['val dfl loss', model.val_dfl_loss]
+  ]
+    .filter((item) => item[1] !== undefined && item[1] !== null && item[1] !== '')
+    .map(([label, value]) => ({
+      label,
+      value: Number(value).toFixed(4)
+    }))
+})
+
+const normalizeModelsResponse = (res) => {
+  if (Array.isArray(res)) return res
+  if (Array.isArray(res?.data)) return res.data
+  if (Array.isArray(res?.models)) return res.models
+  if (Array.isArray(res?.data?.models)) return res.data.models
+  if (Array.isArray(res?.data?.data)) return res.data.data
+  return []
+}
+
+const normalizeActiveResponse = (res) => {
+  return (
+    res?.model_name ||
+    res?.active_model ||
+    res?.data?.model_name ||
+    res?.data?.active_model ||
+    res?.data?.name ||
+    ''
+  )
+}
+
+const loadModels = async () => {
   loading.value = true
 
   try {
-    const res = await getModelVersions()
-    const payload = res?.data || res || {}
-    const data = payload.data || payload
+    const [modelRes, activeRes] = await Promise.all([
+      getModelVersions(),
+      getActiveModel().catch(() => null)
+    ])
 
-    models.value = Array.isArray(data) ? data : []
+    const list = normalizeModelsResponse(modelRes)
 
-    const activeModel = models.value.find(item => item.is_default)
+    models.value = list.map((item) => ({
+      ...item,
+      name: item.name || item.model_name || `pcb_aoi_${item.version}`
+    }))
 
-    if (selectedModel.value) {
-      const same = models.value.find(item => item.name === selectedModel.value.name)
-      selectedModel.value = same || activeModel || models.value[0] || null
-    } else {
+    activeModelName.value = normalizeActiveResponse(activeRes)
+
+    if (!selectedModel.value && models.value.length > 0) {
       selectedModel.value =
-        activeModel ||
-        models.value.find(item => item.name === 'pcb_aoi_v1.1.0') ||
-        models.value[models.value.length - 1] ||
-        null
+        models.value.find((item) => item.name === activeModelName.value) ||
+        models.value[0]
+    } else if (selectedModel.value) {
+      const latest = models.value.find((item) => item.name === selectedModel.value.name)
+      selectedModel.value = latest || models.value[0] || null
     }
+
+    artifactCacheKey.value = Date.now()
   } catch (error) {
-    console.error('加载模型版本失败:', error)
-    models.value = []
+    console.error('加载模型列表失败:', error)
   } finally {
     loading.value = false
   }
 }
 
-function selectModel(model) {
+const selectModel = (model) => {
   selectedModel.value = model
+  artifactCacheKey.value = Date.now()
 }
 
-async function handleSetActiveModel() {
-  if (!selectedModel.value || selectedModel.value.is_default || settingActive.value) {
-    return
-  }
+const isActiveModel = (model) => {
+  if (!model) return false
+  return model.name === activeModelName.value
+}
 
-  const ok = window.confirm(`确定将 ${selectedModel.value.name} 设置为当前检测模型吗？`)
+const handleSetActive = async () => {
+  if (!selectedModel.value) return
 
-  if (!ok) {
-    return
-  }
-
-  settingActive.value = true
+  switching.value = true
 
   try {
     await setActiveModel(selectedModel.value.name)
-    await loadModels()
-    window.alert('当前检测模型设置成功。重新检测时会使用该模型。')
+    activeModelName.value = selectedModel.value.name
   } catch (error) {
-    console.error('设置当前检测模型失败:', error)
-    window.alert('设置失败，请查看后端日志。')
+    console.error('设置当前模型失败:', error)
   } finally {
-    settingActive.value = false
+    switching.value = false
   }
 }
 
-function formatMetric(value) {
-  const numberValue = Number(value)
+const formatPercent = (value) => {
+  if (value === undefined || value === null || value === '') return '-'
 
-  if (Number.isNaN(numberValue)) {
-    return '-'
-  }
+  const num = Number(value)
+  if (Number.isNaN(num)) return '-'
 
-  return `${(numberValue * 100).toFixed(2)}%`
+  const percent = num <= 1 ? num * 100 : num
+  return `${percent.toFixed(2)}%`
 }
 
-function formatNumber(value) {
-  const numberValue = Number(value)
+const artifactUrl = (filename) => {
+  if (!selectedModel.value?.name) return ''
+  return getModelArtifactUrl(
+    selectedModel.value.name,
+    filename,
+    artifactCacheKey.value
+  )
+}
 
-  if (Number.isNaN(numberValue)) {
-    return '-'
-  }
-
-  return numberValue.toFixed(4)
+const openPreview = (chart) => {
+  previewTitle.value = chart.title
+  previewImage.value = artifactUrl(chart.filename)
+  previewVisible.value = true
 }
 
 onMounted(() => {
@@ -299,263 +361,452 @@ onMounted(() => {
 
 <style scoped>
 .models-page {
-  width: 100%;
+  min-height: 100%;
+  padding: 24px 28px 48px;
+  background: #ffffff;
+  color: #0f172a;
 }
 
 .page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
-.page-header h2 {
-  margin: 0;
-  color: #111827;
-  font-size: 22px;
+.page-header h1 {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
 }
 
 .page-header p {
-  margin: 6px 0 0;
-  color: #6b7280;
-  font-size: 13px;
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
 }
 
 .refresh-btn,
-.set-default-btn {
-  height: 36px;
+.set-active-btn {
   border: none;
   border-radius: 999px;
-  background: #111827;
+  background: #0f172a;
   color: #ffffff;
-  padding: 0 18px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
+  transition: 0.2s ease;
+  white-space: nowrap;
 }
 
-.set-default-btn:disabled {
+.refresh-btn:hover,
+.set-active-btn:hover {
+  background: #1e293b;
+}
+
+.refresh-btn:disabled,
+.set-active-btn:disabled {
   background: #d1d5db;
   cursor: not-allowed;
 }
 
-.empty-card {
+.empty-box {
+  padding: 48px;
   border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  border-radius: 16px;
-  padding: 18px;
-  color: #6b7280;
+  border-radius: 18px;
+  color: #64748b;
+  background: #f8fafc;
+  text-align: center;
 }
 
-.model-grid {
+.model-card-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
 }
 
 .model-card {
+  min-width: 0;
   border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 18px;
   background: #ffffff;
-  border-radius: 16px;
-  padding: 16px;
   cursor: pointer;
+  transition: 0.2s ease;
+  box-sizing: border-box;
 }
 
-.model-card:hover,
-.model-card.active {
-  border-color: #111827;
+.model-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
-.model-title-row {
+.model-card.selected {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 1px #0f172a;
+}
+
+.model-card-header {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  margin-bottom: 16px;
 }
 
-.model-title-row h3 {
+.model-title-area {
+  min-width: 0;
+}
+
+.model-card-header h2 {
+  margin: 0 0 4px;
+  font-size: 19px;
+  font-weight: 800;
+  word-break: break-word;
+}
+
+.model-card-header p {
   margin: 0;
-  color: #111827;
-  font-size: 16px;
+  font-size: 13px;
+  color: #64748b;
+  word-break: break-word;
 }
 
-.model-title-row p {
-  margin: 6px 0 0;
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.default-pill {
+.active-badge {
   height: 24px;
-  border-radius: 999px;
-  background: #dcfce7;
-  color: #166534;
-  padding: 0 10px;
+  padding: 0 12px;
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
   flex-shrink: 0;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.metric-mini-grid {
+.mini-metrics {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 14px;
 }
 
-.metric-mini-grid div {
+.mini-metric {
+  min-width: 0;
+  box-sizing: border-box;
   border: 1px solid #e5e7eb;
-  background: #f9fafb;
   border-radius: 12px;
-  padding: 10px;
+  padding: 10px 8px;
+  background: #f8fafc;
+  overflow: hidden;
 }
 
-.metric-mini-grid span {
+.mini-metric span {
   display: block;
-  color: #6b7280;
+  margin-bottom: 5px;
   font-size: 11px;
+  line-height: 1.2;
+  color: #64748b;
+  white-space: nowrap;
 }
 
-.metric-mini-grid strong {
+.mini-metric strong {
   display: block;
-  margin-top: 5px;
-  color: #111827;
-  font-size: 13px;
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
 }
 
-.model-meta {
+.model-tags {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px;
   margin-top: 14px;
 }
 
-.model-meta span {
-  height: 24px;
+.model-tags span {
+  padding: 5px 10px;
   border-radius: 999px;
-  background: #f3f4f6;
-  color: #374151;
-  padding: 0 10px;
-  display: inline-flex;
-  align-items: center;
+  background: #f1f5f9;
+  color: #475569;
   font-size: 12px;
-}
-
-.detail-section {
-  margin-top: 22px;
-  border-top: 1px solid #e5e7eb;
-  padding-top: 22px;
-}
-
-.section-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.section-header h3 {
-  margin: 0;
-  color: #111827;
-  font-size: 20px;
-}
-
-.section-header p {
-  margin: 6px 0 0;
-  color: #6b7280;
-}
-
-.active-tip {
-  margin-top: 12px;
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-radius: 12px;
-  padding: 10px 12px;
-  font-size: 13px;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 16px;
-}
-
-.detail-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 16px;
-  background: #ffffff;
-}
-
-.detail-card h4,
-.artifact-section h4 {
-  margin: 0 0 12px;
-  color: #111827;
-}
-
-.detail-card table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.detail-card td {
-  border-bottom: 1px solid #e5e7eb;
-  padding: 9px 0;
-  color: #374151;
-  font-size: 13px;
-}
-
-.detail-card td:last-child {
-  text-align: right;
-  color: #111827;
   font-weight: 600;
 }
 
-.artifact-section {
-  margin-top: 20px;
+.detail-section {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 24px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.detail-header h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.detail-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.info-tip {
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 13px;
+}
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: 520px 520px;
+  justify-content: start;
+  align-items: stretch;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.metric-panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 22px 24px;
+  min-height: 280px;
+  box-sizing: border-box;
+}
+
+.metric-panel h3 {
+  margin: 0 0 18px;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.compact-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.compact-row {
+  display: grid;
+  grid-template-columns: 150px 110px;
+  justify-content: start;
+  align-items: center;
+  column-gap: 18px;
+  min-height: 38px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.metric-panel-score .compact-row {
+  min-height: 48px;
+}
+
+.metric-panel-loss .compact-row {
+  min-height: 38px;
+}
+
+.compact-row:last-child {
+  border-bottom: none;
+}
+
+.compact-row span {
+  color: #475569;
+  font-size: 16px;
+}
+
+.compact-row strong {
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.charts-section {
+  margin-top: 8px;
+}
+
+.charts-section h3 {
+  margin: 0 0 18px;
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .artifact-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(520px, 1fr));
+  gap: 22px;
 }
 
 .artifact-card {
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 14px;
+  border-radius: 18px;
+  padding: 16px;
   background: #ffffff;
 }
 
-.artifact-card h5 {
-  margin: 0 0 10px;
-  color: #111827;
+.artifact-card.wide {
+  grid-column: span 2;
 }
 
-.artifact-card img {
+.artifact-title {
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.artifact-image-wrap {
   width: 100%;
-  display: block;
-  border-radius: 10px;
-  background: #f9fafb;
+  min-height: 360px;
+  border-radius: 14px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-@media (max-width: 900px) {
-  .section-header {
-    flex-direction: column;
-  }
+.artifact-img {
+  width: 100%;
+  height: 420px;
+  object-fit: contain;
+  cursor: zoom-in;
+  display: block;
+}
 
-  .detail-grid {
-    grid-template-columns: 1fr;
+.artifact-card.wide .artifact-image-wrap {
+  min-height: 520px;
+}
+
+.artifact-card.wide .artifact-img {
+  height: 540px;
+}
+
+.preview-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36px;
+}
+
+.preview-panel {
+  width: min(1280px, 96vw);
+  max-height: 92vh;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 18px;
+  overflow: auto;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.preview-header strong {
+  font-size: 18px;
+}
+
+.preview-header button {
+  border: none;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.preview-img {
+  width: 100%;
+  max-height: 78vh;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-width: 1200px) {
+  .metrics-row {
+    grid-template-columns: 520px 520px;
+    overflow-x: auto;
   }
 
   .artifact-grid {
     grid-template-columns: 1fr;
   }
 
-  .metric-mini-grid {
+  .artifact-card.wide {
+    grid-column: span 1;
+  }
+
+  .artifact-img,
+  .artifact-card.wide .artifact-img {
+    height: 360px;
+  }
+
+  .artifact-card.wide .artifact-image-wrap {
+    min-height: 380px;
+  }
+}
+
+@media (max-width: 720px) {
+  .models-page {
+    padding: 18px;
+  }
+
+  .page-header,
+  .detail-header {
+    flex-direction: column;
+  }
+
+  .model-card-list {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metrics-row {
+    grid-template-columns: 1fr;
+    overflow-x: visible;
+  }
+
+  .compact-row {
+    grid-template-columns: 130px 100px;
+    column-gap: 14px;
+  }
+
+  .metric-panel-score .compact-row,
+  .metric-panel-loss .compact-row {
+    min-height: 42px;
+  }
+
+  .artifact-img,
+  .artifact-card.wide .artifact-img {
+    height: 280px;
   }
 }
 </style>
